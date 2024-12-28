@@ -30,20 +30,8 @@ from langchain.chains import RetrievalQA
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-os.environ["aws-profile"] = "aws-toolkit-local"
-region = "us-east-1" # for example, "us-east-1" or "us-west-2"
-AWS_ACCESS_KEY_ID = st.secrets["aws-toolkit-local"]["AWS_ACCESS_KEY_ID"] #get secrets from streamlit 
-AWS_SECRET_ACCESS_KEY = st.secrets["aws-toolkit-local"]["AWS_SECRET_ACCESS_KEY"] #get secrets from streamlit
-
-
 # Bedrock Clients
-bedrock_runtime = boto3.client(
-    aws_access_key_id=AWS_ACCESS_KEY_ID, #for streamlit live 
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY, #for streamlit live 
-    service_name="bedrock-runtime",
-    region_name=region,
-)
-
+bedrock = boto3.client(service_name="bedrock-runtime")
 bedrock_embeddings = BedrockEmbeddings(client=bedrock, model_id="amazon.titan-embed-text-v1")
 
 #Data ingestion
