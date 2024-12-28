@@ -37,7 +37,7 @@ AWS_SECRET_ACCESS_KEY = st.secrets["aws-toolkit-local"]["AWS_SECRET_ACCESS_KEY"]
 
 
 # Bedrock Clients
-bedrock_runtime = boto3.client(
+bedrock = boto3.client(
     aws_access_key_id=AWS_ACCESS_KEY_ID, #for streamlit live 
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY, #for streamlit live 
     service_name="bedrock-runtime",
