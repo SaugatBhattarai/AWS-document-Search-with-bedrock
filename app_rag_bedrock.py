@@ -80,7 +80,7 @@ PROMPT = PromptTemplate(
     input_variables=["context", "question"]
 )
 
-def get_response_llm(llm, vectorstore_faiss,query):
+def get_response_llm(llm, vectorstore_faiss, query):
     qa = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",
@@ -91,8 +91,9 @@ def get_response_llm(llm, vectorstore_faiss,query):
         return_source_documents=True,
         chain_type_kwargs={"prompt": PROMPT}
     )
-    answer = qa({"query": query})
+    answer = qa.invoke({"query": query})  
     return answer['result']
+
 
 def main():
     st.set_page_config("Document Search Using AWS Bedrock, Langchain, streamlit and RAG")
