@@ -38,7 +38,7 @@ bedrock_embeddings = BedrockEmbeddings(client=bedrock, model_id="amazon.titan-em
 def data_ingestion():
     loader = PyPDFDirectoryLoader("data")
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     docs = text_splitter.split_documents(documents)
     return docs
 
@@ -58,7 +58,7 @@ def get_claude_llm():
             model_id="anthropic.claude-3-haiku-20240307-v1:0",
             client=bedrock,
             model_kwargs =  { 
-                "max_tokens": 1024,
+                "max_tokens": 2048,
                 "temperature": 0.9,
             }
         )
@@ -70,7 +70,7 @@ def get_claude_llm():
 #Create the LLM Chain
 prompt_template = """
 Human: Use the following pieces of context to provide 
-a concise answer the question at the end within 500 words with details explanation. 
+a concise answer the question at the end within 1500 words with details explanation. 
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 {context}
 Question: {question}
@@ -103,8 +103,7 @@ def main():
     
     with st.sidebar:
         st.title("Update Or Create Vector Store:")
-        # st.divider()
-        if st.button("Vectors Update"):
+        if st.button("Update Vector Store"):
             with st.spinner("Processing..."):
                 docs = data_ingestion()
                 get_vector_store(docs)
@@ -116,7 +115,6 @@ def main():
             claude_llm = get_claude_llm()
             st.write(get_response_llm(claude_llm, faiss_index, user_query))
             st.success("Done")
-
 
 
 if __name__ == "__main__":
