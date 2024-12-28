@@ -9,7 +9,8 @@ import logging
 import streamlit as st
 
 # We will be using Titan Embeddings Model to generate embeddings for our documents and user queries
-from langchain_community.embeddings import BedrockEmbeddings
+# from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 from langchain_aws import ChatBedrock
 
 # Data Ingestion
@@ -18,16 +19,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
-# # Initialize logger
-# logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
-
 # Vector Embedding and Vector Store
 from langchain_community.vectorstores import FAISS
 
 # LLM Models
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
+
+# # Initialize logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # Bedrock Clients
 bedrock = boto3.client(service_name="bedrock-runtime")
@@ -37,7 +38,7 @@ bedrock_embeddings = BedrockEmbeddings(client=bedrock, model_id="amazon.titan-em
 def data_ingestion():
     loader = PyPDFDirectoryLoader("data")
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     docs = text_splitter.split_documents(documents)
     return docs
 
@@ -52,30 +53,21 @@ def get_vector_store(docs):
 
 #Create the Antropic Claude LLM
 def get_claude_llm():
-    claude_llm = ChatBedrock(
-        model_id="anthropic.claude-3-haiku-20240307-v1:0",
-        client=bedrock,
-        model_kwargs =  { 
-            "max_tokens": 512,
-            "temperature": 0.9,
-        }
-    )
-    return claude_llm
-
-#Create Llama 2 LLM
-def get_llama2_llm():
-    llama2_llm = Bedrock(
-        model_id="meta.llama2-70b-chat-v1",
-        client=bedrock,
-        model_kwargs =  {
-            "max_gen_len": 512,
-            "temperature": 0.9,
-        }
-    )
-    return llama2_llm
+    try:
+        claude_llm = ChatBedrock(
+            model_id="anthropic.claude-3-haiku-20240307-v1:0",
+            client=bedrock,
+            model_kwargs =  { 
+                "max_tokens": 1024,
+                "temperature": 0.9,
+            }
+        )
+        return claude_llm
+    except Exception as e:
+        logger.error(f"Failed to initialize Llama2 LLM: {e}")
+        raise
 
 #Create the LLM Chain
-
 prompt_template = """
 Human: Use the following pieces of context to provide 
 a concise answer the question at the end within 500 words with details explanation. 
@@ -106,25 +98,25 @@ def main():
     st.set_page_config("Document Search Using AWS Bedrock, Langchain, streamlit and RAG")
     st.header("Document Search Using AWS Bedrock")
 
-    user_query = st.text_area("Ask a Questtion from the PDF Files.")
+    user_query = st.text_area("Ask a Question from the PDF Files.")
     
     with st.sidebar:
         st.title("Update Or Create Vector Store:")
-        st.divider()
+        # st.divider()
         if st.button("Vectors Update"):
             with st.spinner("Processing..."):
                 docs = data_ingestion()
                 get_vector_store(docs)
                 st.success("Done")
 
-    if st.button("Claude Update"):
+    if st.button("Claude Search"):
         with st.spinner("Processing..."):
-
             faiss_index=FAISS.load_local("faiss_index", bedrock_embeddings,allow_dangerous_deserialization=True)
             claude_llm = get_claude_llm()
-
             st.write(get_response_llm(claude_llm, faiss_index, user_query))
             st.success("Done")
+
+
 
 if __name__ == "__main__":
     main()
